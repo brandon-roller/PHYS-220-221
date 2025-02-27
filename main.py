@@ -3,12 +3,16 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
-def exponential(x, a, b, c, d):
-    return a*np.exp(b*x+c)+d
+def root(x, v_0, w):
+    return v_0 / np.sqrt(1+(w*x)**2)
 
 
-def compute_r_squared(xdata, ydata, *args):
-    residuals = ydata - exponential(xdata, *args)
+def arc_tangent(x, w):
+    return np.atan(w*x) * 180/np.pi
+
+
+def compute_r_squared(func, xdata, ydata, *args):
+    residuals = ydata - func(xdata, *args)
     ss_res = np.sum(residuals ** 2)
     ss_tot = np.sum((ydata - np.mean(ydata)) ** 2)
     r_squared = 1 - (ss_res / ss_tot)
@@ -35,28 +39,28 @@ if __name__ == "__main__":
     amplitude = lock_in_data[:, 1]
     phase = lock_in_data[:, 2]
 
-    # Lock-in amplitude
-    popt, pcov = curve_fit(exponential, frequency, amplitude, p0=(1.233, -4.904e-4, -9.519e-1, 6.138e-2))
-    amplitude_plot = plt.figure(1)
-    plt.plot(frequency, exponential(frequency, *popt),
-             label="Best fit: $%s e^{%s f %s} + %s$" % tuple(scientific_notation(p) for p in popt))
+    # Lock in amplitude
+    popt, pcov = curve_fit(root, frequency, amplitude, p0=(0.1, 1.0))
+    phase_plot = plt.figure(1)
+    plt.plot(frequency, root(frequency, *popt),
+             label="Best fit: $\\frac{%s}{\\sqrt{1+(%s f)^2}}$" % tuple(scientific_notation(p) for p in popt))
     plt.scatter(frequency, amplitude, color="red", marker='.', label="Lock-in Data")
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Amplitude (V)")
-    plt.title(f"Fit $R^2={compute_r_squared(frequency, amplitude, *popt): .3}$")
-    plt.legend()
-    amplitude_plot.show()
+    plt.title(f"Fit $R^2={compute_r_squared(root, frequency, amplitude, *popt): .5}$")
+    plt.legend(fontsize=14)
+    phase_plot.show()
 
-    # Lock-in phase
-    popt, pcov = curve_fit(exponential, frequency, phase, p0=(2.437, -7.408e-4, 3.444, -77.119))
+    # Lock in phase
+    popt, pcov = curve_fit(arc_tangent, frequency, phase, p0=(-0.5))
     phase_plot = plt.figure(2)
-    plt.plot(frequency, exponential(frequency, *popt),
-             label="Best fit: $%s e^{%s f-%s} %s$" % tuple(scientific_notation(p) for p in popt))
+    plt.plot(frequency, arc_tangent(frequency, *popt),
+             label="Best fit: $\\tan^{-1}(%s f)$" % tuple(scientific_notation(p) for p in popt))
     plt.scatter(frequency, phase, color="red", marker='.', label="Lock-in Data")
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Phase (Degree)")
-    plt.title(f"Fit $R^2={compute_r_squared(frequency, phase, *popt): .3}$")
-    plt.legend()
+    plt.title(f"Fit $R^2={compute_r_squared(arc_tangent, frequency, phase, *popt): .5}$")
+    plt.legend(fontsize=14)
     phase_plot.show()
 
     """Oscilloscope"""
@@ -67,27 +71,27 @@ if __name__ == "__main__":
     phase = oscilloscope_data[:, 2]
 
     # Oscilloscope amplitude
-    popt, pcov = curve_fit(exponential, frequency, amplitude, p0=(1, -4.904e-4, 1, 0))
+    popt, pcov = curve_fit(root, frequency, amplitude, p0=(0.1, 1.0))
     amplitude_plot = plt.figure(3)
-    plt.plot(frequency, exponential(frequency, *popt),
-             label="Best fit: $%s e^{%s f %s} + %s$" % tuple(scientific_notation(p) for p in popt))
+    plt.plot(frequency, root(frequency, *popt),
+             label="Best fit: $\\frac{%s}{\\sqrt{1+(%s f)^2}}$" % tuple(scientific_notation(p) for p in popt))
     plt.scatter(frequency, amplitude, color="red", marker='.', label="Oscilloscope Data")
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Amplitude (V)")
-    plt.title(f"Fit $R^2={compute_r_squared(frequency, amplitude, *popt): .3}$")
-    plt.legend()
+    plt.title(f"Fit $R^2={compute_r_squared(root, frequency, amplitude, *popt): .5}$")
+    plt.legend(fontsize=14)
     amplitude_plot.show()
 
     # Oscilloscope phase
-    popt, pcov = curve_fit(exponential, frequency, phase, p0=(2.437, -7.408e-4, 3.444, -77.119))
+    popt, pcov = curve_fit(arc_tangent, frequency, phase, p0=(-0.5))
     phase_plot = plt.figure(4)
-    plt.plot(frequency, exponential(frequency, *popt),
-             label="Best fit: $%s e^{%s f + %s} %s$" % tuple(scientific_notation(p) for p in popt))
+    plt.plot(frequency, arc_tangent(frequency, *popt),
+             label="Best fit: $\\tan^{-1}(%s f)$" % tuple(scientific_notation(p) for p in popt))
     plt.scatter(frequency, phase, color="red", marker='.', label="Oscilloscope Data")
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Phase (Degree)")
-    plt.title(f"Fit $R^2={compute_r_squared(frequency, phase, *popt): .3}$")
-    plt.legend()
+    plt.title(f"Fit $R^2={compute_r_squared(arc_tangent, frequency, phase, *popt): .5}$")
+    plt.legend(fontsize=14)
     phase_plot.show()
 
     """Oscilloscope phase data cleaned"""
@@ -97,15 +101,15 @@ if __name__ == "__main__":
     phase = oscilloscope_data[:, 2]
 
     # Cleaned oscilloscope phase
-    popt, pcov = curve_fit(exponential, frequency, phase, p0=(2.437, -7.408e-4, 3.444, -77.119))
+    popt, pcov = curve_fit(arc_tangent, frequency, phase, p0=(-0.5))
     phase_plot = plt.figure(5)
-    plt.plot(frequency, exponential(frequency, *popt),
-             label="Best fit: $%s e^{%s f +%s} %s$" % tuple(scientific_notation(p) for p in popt))
-    plt.scatter(frequency, phase, color="red", marker='.', label="Oscilloscope Data, Bad Points Removed")
+    plt.plot(frequency, arc_tangent(frequency, *popt),
+             label="Best fit: $\\tan^{-1}(%s f)$" % tuple(scientific_notation(p) for p in popt))
+    plt.scatter(frequency, phase, color="red", marker='.', label="Oscilloscope Data, cleaned")
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Phase (Degree)")
-    plt.title(f"Fit $R^2={compute_r_squared(frequency, phase, *popt): .3}$")
-    plt.legend()
+    plt.title(f"Fit $R^2={compute_r_squared(arc_tangent, frequency, phase, *popt): .5}$")
+    plt.legend(fontsize=14)
     phase_plot.show()
 
     plt.show()
