@@ -1,62 +1,92 @@
+// Brandon Roller, Aldiyar Zhumashov
 
-const int analogInPin = A0;
+const int directionPin = 2;
+const int stepPin = 3;
 const int analogOutPin = 9;
-const int motorPin = 3;
 
-void setup() 
+void setup()
 {
-  // DC power
-  Serial.begin(9600);       // Start serial for monitoring
-  pinMode(analogInPin, INPUT);         // Not strictly necessary, default is INPUT
+  // Starts communication at 9500 baud
+  Serial.begin(9600);
+
+  // Sets all analog pins to input
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT);
+  pinMode(A3, INPUT);
+  pinMode(A4, INPUT);
+  pinMode(A5, INPUT);
 
   // Step motor
-  pinMode(2, OUTPUT);
-  pinMode(motorPin, OUTPUT);
-  digitalWrite(2, HIGH);
+  pinMode(directionPin, OUTPUT);
+  pinMode(stepPin, OUTPUT);
+  digitalWrite(directionPin, HIGH); // Forwards, initially
 }
 
 
+// Step helper method
+// Steps by a given integer of steps
 void step(int s)
 {
-  for (int i = 0l; i < s; i++)
+
+  // Reset step direction 
+  if (s < 0)
   {
-    digitalWrite(motorPin, HIGH);
+    // Backwards stepping
+    digitalWrite(directionPin, LOW);
+  }
+  else
+  {
+    // Forwards stepping
+    digitalWrite(directionPin, HIGH);
+  }
+
+  // Step s-many steps
+  for (int i = 0; i < abs(s); i++)
+  {
+    digitalWrite(stepPin, HIGH);
     delayMicroseconds(60);
-    digitalWrite(motorPin, LOW);
+    digitalWrite(stepPin, LOW);
     delayMicroseconds(60);
   }
+
 }
+
 
 void loop()
 {
-  // Read the analog input and convert it to a voltage (5V reference)
-  // int sensorValue = analogRead(analogInPin);
-  // float voltage = sensorValue * (5.0 / 4095.0);
-
   analogWrite(analogOutPin, 120); // PWM, 0-255 is the duty cycle
 
-  // Print it out
-  // Serial.print("Analog reading = ");
-  // Serial.print(sensorValue);
-  // Serial.print(" | Voltage ~ ");
-  // Serial.println(voltage);
-
-  // delay(500); // Half a second between reads
-
   // Read input
+  // TODO: add a new command for analog in pins
   if (Serial.available())
   {
     String command = Serial.readStringUntil('\n');
     command.trim();
     switch (command.charAt(0))
     {
-      case 's':
+      case 's':  // Stepping
       {
         int steps = command.substring(2).toInt();
         step(steps);
         Serial.print("Stepped ");
         Serial.print(steps);
         Serial.println(" steps.");
+        break;
+      }
+      case 'r':  // Reading
+      {
+        int pin = command.substring(2).toInt();
+
+        // Read the analog input and convert it to a voltage with a 5V reference
+        int sensorValue = analogRead(pin);
+        float voltage = sensorValue * (5.0 / 4095.0);
+
+        //Print the results
+        Serial.print("Analog reading = ");
+        Serial.print(sensorValue);
+        Serial.print(" | Voltage ~ ");
+        Serial.println(voltage);
         break;
       }
       default:
