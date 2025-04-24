@@ -3,6 +3,7 @@
 const int directionPin = 2;
 const int stepPin = 3;
 const int analogOutPin = 9;
+int dutyCycle = 0;
 
 void setup()
 {
@@ -55,7 +56,7 @@ void step(int s)
 
 void loop()
 {
-  analogWrite(analogOutPin, 120); // PWM, 0-255 is the duty cycle
+  analogWrite(analogOutPin, dutyCycle);  // PWM
 
   // Read input
   // TODO: add a new command for analog in pins
@@ -80,13 +81,21 @@ void loop()
 
         // Read the analog input and convert it to a voltage with a 5V reference
         int sensorValue = analogRead(pin);
-        float voltage = sensorValue * (5.0 / 4095.0);
+        float voltage = sensorValue * (5.0 / 1023.0);
 
         //Print the results
         Serial.print("Analog reading = ");
         Serial.print(sensorValue);
         Serial.print(" | Voltage ~ ");
         Serial.println(voltage);
+        break;
+      }
+      case 'w':  // Writing
+      {
+        dutyCycle = command.substring(2).toInt();
+        Serial.print("Now writing a duty cycle of ");
+        Serial.print(dutyCycle);
+        Serial.println(" to pin ~9.");
         break;
       }
       default:
